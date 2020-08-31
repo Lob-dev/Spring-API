@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Getter @Setter @EqualsAndHashCode(of = "id") // of id? entity 간의 연관 관계가 있을 때 상호 참조하는 관계가 되어버리면 스택오버플로우가 발생 가능
 public class Event {                          // id의 값만 가지고 equals와 hashcode를 비교함 연관 관계에 해당하는 녀석은 넣으면 안된다
 
-    private Integer id;
+    private Integer id; // id 값을 통하여 DB 조회를 수행한다.
     private String name; // 명
     private String description; // 설명
     private LocalDateTime beginEnrollmentDateTime; // 시작 일시
