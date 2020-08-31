@@ -4,9 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.springframework.beans.ExtendedBeanInfoFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -24,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RunWith(SpringRunner.class)
-@WebMvcTest
+@WebMvcTest //슬라이스 Test  WEB용 Bean들만 등록하여 주기 때문에 @Repository, extend JpaRepository 로 등록된 Bean은 적용되지 않는다.
 public class EventControllerTests {
 
     @Autowired
@@ -33,6 +35,9 @@ public class EventControllerTests {
     @Autowired
     private WebApplicationContext webApplicationContext; // 사용자 정의 DI 컨테이너를 만들기 위해 ApplicationContext를 확장한 WebApplicationContext을 자동으로 Inject 합니다.
 
+               // Repository를 사용해야한다면 Mocking을 통해서 만들어 사용해야한다. 이 객체는 Mock 객체이기 때문에 어떠한 메서드를 이용해도 Null이 반환된다.
+     @MockBean // NullPointerException이 발생할 것이다. 이를 해결하기 위해선 어떻게 동작하라고 지정을 해야한다.
+    EventRepository eventRepository;
 
     @Before // 테스트 실행전 이 어노테이션이 선언된 부분을 실행한다.
     public void setup() { // Filters는 서블렛 요청와 응답사이에 존재하여 필터의 설정을 통하여 요청들을 뽑아내고 조작할 수 있다.
@@ -63,6 +68,8 @@ public class EventControllerTests {
                 .limitOfEnrollment(100) // 최대 인원
                 .location("강남역 D2 스타텁 팩토리") // 장소
                 .build();
+        event.setId(10);
+        Mockito.when(eventRepository.save(event)).thenReturn(event); // eventRepository.save(event) 가 호출이 되면 위에 빌드한 event를 반환해라.
 
 
         mockMvc.perform(post("/api/events/") // perform = 받은 url 주소로 post 요청을 보냄 post -> /api/events/

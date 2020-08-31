@@ -3,12 +3,15 @@ package com.lob.demoinflearnrestapi.events;
 
 import lombok.*;
 
+import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Builder @AllArgsConstructor @NoArgsConstructor // 롬복 어노테이션은 다른 어노테이션과 다르게 메타 어노테이션을 통한 사용이 불가능하다.
 @Getter @Setter @EqualsAndHashCode(of = "id") // of id? entity 간의 연관 관계가 있을 때 상호 참조하는 관계가 되어버리면 스택오버플로우가 발생 가능
+@Entity
 public class Event {                          // id의 값만 가지고 equals와 hashcode를 비교함 연관 관계에 해당하는 녀석은 넣으면 안된다
 
+    @Id @GeneratedValue
     private Integer id; // id 값을 통하여 DB 조회를 수행한다.
     private String name; // 명
     private String description; // 설명
@@ -22,6 +25,7 @@ public class Event {                          // id의 값만 가지고 equals�
     private int limitOfEnrollment;
     private boolean offline;
     private boolean free;
+    @Enumerated(EnumType.STRING) // 기본 값은 ORDINAL 숫자 값으로 인덱싱이 되는데 나중에 Enum의 순서가 바뀌거나 변경되었을 경우 데이터가 꼬인다.
     private EventStatus eventStatus;
 
 
