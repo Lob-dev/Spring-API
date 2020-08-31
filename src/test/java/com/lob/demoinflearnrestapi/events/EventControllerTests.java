@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
@@ -22,8 +23,7 @@ import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @RunWith(SpringRunner.class)
 @WebMvcTest //슬라이스 Test  WEB용 Bean들만 등록하여 주기 때문에 @Repository, extend JpaRepository 로 등록된 Bean은 적용되지 않는다.
@@ -78,7 +78,13 @@ public class EventControllerTests {
                     .content(objectMapper.writeValueAsString(event)))// jackson 을 이용하여 해당 엔티티를 json 문자열로 변환 후 요청 본문에 넣었다.
                 .andDo(print()) // andDo(print())를 통하여 실제 요청과 응답을 확인할 수 있다.
                 .andExpect(status().isCreated()) // Created는 201이다. 이와 다른 방법으론 is(201) 등으로 직접 입력하면 된다.
-                .andExpect(jsonPath("id").exists()); // id 라는 응답 값이 있는지 확인
+                .andExpect(jsonPath("id").exists()) // id 라는 응답 값이 있는지 확인
+                .andExpect(header().exists(HttpHeaders.LOCATION)) // Location 응답 헤더 확인
+                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_VALUE)); // Content-Type 응답 헤더 확인
+                //andDo(print())를 통해 나온 모든 값들은 andExpect로 검증할 수 있다.
+                //직접 문자열로 타입을 넣는 것보다 HttpHeaders, MediaTypes 등을 이용해 상수를 이용해서 좀 더 완벽한 검증을 할 수 있다.
+
+                //진정한 TDD
     }
 
 }
