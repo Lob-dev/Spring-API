@@ -26,7 +26,7 @@ public class Event {                          // id의 값만 가지고 equals�
     private boolean offline;
     private boolean free;
     @Enumerated(EnumType.STRING) // 기본 값은 ORDINAL 숫자 값으로 인덱싱이 되는데 나중에 Enum의 순서가 바뀌거나 변경되었을 경우 데이터가 꼬인다.
-    private EventStatus eventStatus;
+    private EventStatus eventStatus = EventStatus.DRAFT;
 
 
 }
