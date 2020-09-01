@@ -61,10 +61,14 @@ public class EventControllerTests {
     // (client) MockHttpServletRequest (Post) -> doFilters -> DispatcherServlet -> preHandler -> AOP(Around) EventController의 (Post)createEvent(Event)
     // -> postHandler -> DispatcherServlet -> doFilters-> (client) MockHttpServletResponse (status 201)
 
+
+    // 입력값 제한이란? 받기 원하는 값들만 받을 수 있도록 제약을 거는 것
+    // 계산되어야하는 값, 시스템을 통해 지정해야 되는 값은 입력값을 제한해야 한다.
+    // 여기에서는 Id(DB 생성), free(basePrice, maxPrice가 없어야함), offline 로직을 통한 판단이 필요한 것들
+    // 입력값을 무시하는 방법 Dto 를 이용하여 구현함
     @Test
     public void createEvent() throws Exception {
-        Event event = Event.builder() // Event 엔티티 제작 client 의 Form 을 통한 Post 요청과 동일
-                .id(100)
+        EventDto event = EventDto.builder() // Event 엔티티 제작 client 의 Form 을 통한 Post 요청과 동일
                 .name("Spring")
                 .description("REST API Development with Spring")
                 .beginEnrollmentDateTime(LocalDateTime.of(2018,11,23,14,21)) // 모집일
@@ -75,14 +79,8 @@ public class EventControllerTests {
                 .maxPrice(200)
                 .limitOfEnrollment(100) // 최대 인원
                 .location("강남역 D2 스타텁 팩토리") // 장소
-                .free(true)
-                .offline(false)
-                .eventStatus(EventStatus.PUBLISHED)
                 .build();
 
-        // 입력값 제한이란? 받기 원하는 값들만 받을 수 있도록 제약을 거는 것
-        // 계산되어야하는 값, 시스템을 통해 지정해야 되는 값은 입력값을 제한해야 한다.
-        // 여기에서는 Id(DB 생성), free(basePrice, maxPrice가 없어야함), offline 로직을 통한 판단이 필요한 것들
         mockMvc.perform(post("/api/events/") // perform = 받은 url 주소로 post 요청을 보냄 post -> /api/events/
                     .contentType(MediaType.APPLICATION_JSON) // 이 요청의 본문에 JSON 타입을 보낸다.
                     .accept(MediaTypes.HAL_JSON) // 받고 싶은 응답은 HAL_JSON을 원한다. (Hypertext Application Language)
@@ -93,13 +91,44 @@ public class EventControllerTests {
                 .andExpect(header().exists(HttpHeaders.LOCATION)) // Location 응답 헤더 확인
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_VALUE)) // Content-Type 응답 헤더 확인
                 .andExpect(jsonPath("id").value(Matchers.not(100)))
-                .andExpect(jsonPath("free").value(Matchers.not(true)));
+                .andExpect(jsonPath("free").value(Matchers.not(true)))
+                .andExpect(jsonPath("eventStatus").value(Matchers.not("PUBLISHED")))
+                .andExpect(jsonPath("eventStatus").value("DRAFT"));
                 //andDo(print())를 통해 나온 모든 값들은 andExpect로 검증할 수 있다.
                 //직접 문자열로 타입을 넣는 것보다 HttpHeaders, MediaTypes 등을 이용해 상수를 이용해서 좀 더 완벽한 검증을 할 수 있다.
                 //Dto를 사용하여 이 문제를 해결해보자. Jackson to json 제공하는 어노테이션 @JsonIgnore 등도 사용할 수 있으나.
                 //어노테이션이 너무 많으면 복잡하게 엮일 수 있기때문에 분산하기로 하였다. DTO의 문제점은 필드의 중복이 발생한다는 것이다.
+    }
 
+    // 입력받으면 안되는 값이 들어올 경우 에러를 던지는 방법 (DTO 범위 등)
+    @Test
+    public void createEvent_Bad_Request() throws Exception {
+        Event event = Event.builder()
+                .id(100)// 무시될 값
+                .name("Spring")
+                .description("REST API Development with Spring")
+                .beginEnrollmentDateTime(LocalDateTime.of(2018,11,23,14,21)) // 모집일
+                .closeEnrollmentDateTime(LocalDateTime.of(2018,11,24,14,21)) // 모집 종료일
+                .beginEventDateTime(LocalDateTime.of(2018,11,25,14,21)) // 시작일
+                .endEventDateTime(LocalDateTime.of(2018,11,26,14,21)) // 종료일
+                .basePrice(100)
+                .maxPrice(200)
+                .limitOfEnrollment(100) // 최대 인원
+                .location("강남역 D2 스타텁 팩토리") // 장소
+                .free(true)// 무시될 값
+                .offline(false)// 무시될 값
+                .eventStatus(EventStatus.PUBLISHED)// 무시될 값
+                .build();
+        
+                //free, offline 등 들어오면 안되는 값이 입력된다면 -> Bad Request를 반환해야한다.
 
+        mockMvc.perform(post("/api/events/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaTypes.HAL_JSON)
+                .content(objectMapper.writeValueAsString(event)))
+                .andDo(print())
+                .andExpect(status().isBadRequest()); // Bad Request가 응답되길 기대한다.
+        // 입력 받을 수 있는 값만 걸러내서 받을지[느슨하게], 에러를 발생할 것인지는 선택[엄격하게]
     }
 
 }

@@ -23,6 +23,7 @@ public class EventController {
     private final EventRepository eventRepository;
     private final ModelMapper modelMapper;
 
+    //파라메터가 여러개 있어도 빈으로 등록되어있다면 @Autowried 같은 어노테이션이 없더라도 모두 주입된다.
     public EventController(EventRepository eventRepository, ModelMapper modelMapper) {
         this.eventRepository = eventRepository;
         this.modelMapper = modelMapper;
