@@ -24,11 +24,13 @@ public class EventController {
 
     private final EventRepository eventRepository;
     private final ModelMapper modelMapper;
+    private final EventValidator eventValidator;
 
     //파라메터가 여러개 있어도 빈으로 등록되어있다면 @Autowried 같은 어노테이션이 없더라도 모두 주입된다.
-    public EventController(EventRepository eventRepository, ModelMapper modelMapper) {
+    public EventController(EventRepository eventRepository, ModelMapper modelMapper, EventValidator eventValidator) {
         this.eventRepository = eventRepository;
         this.modelMapper = modelMapper;
+        this.eventValidator = eventValidator;
     }
 
     //Location 헤더에 있는 URI를 통해 이벤트를 조회할 수 있다.
@@ -40,6 +42,12 @@ public class EventController {
         //Dto를 사용할 경우 Repository를 사용하기 위해선 엔티티(Event)로 바꾸어야하는데 이때 사용할 수 있는 것이 DTO -> 도메인 객체로 값을 복사하는 ModelMapper이다.
         //이 방법을 사용하지 않는다면 도메인 객체를 직접 빌더하여서 evtentDto의 값을 하나씩 넣어줘야한다.
         //ModelMapper를 사용할 경우 리플렉션으로 인한 시간 지연이 발생한다. 이점을 고려해서 사용하자.
+        // @Valid를 이용한 값 검증 후 에러 검출
+        if (errors.hasErrors()) {
+            return ResponseEntity.badRequest().build();
+        }
+        // validator를 이용한 논리 값 검증
+        eventValidator.validate(eventDto, errors);
         if (errors.hasErrors()) {
             return ResponseEntity.badRequest().build();
         }
