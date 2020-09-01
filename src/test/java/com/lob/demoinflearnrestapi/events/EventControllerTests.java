@@ -119,7 +119,7 @@ public class EventControllerTests {
                 .offline(false)// 무시될 값
                 .eventStatus(EventStatus.PUBLISHED)// 무시될 값
                 .build();
-        
+
                 //free, offline 등 들어오면 안되는 값이 입력된다면 -> Bad Request를 반환해야한다.
 
         mockMvc.perform(post("/api/events/")
@@ -129,6 +129,18 @@ public class EventControllerTests {
                 .andDo(print())
                 .andExpect(status().isBadRequest()); // Bad Request가 응답되길 기대한다.
         // 입력 받을 수 있는 값만 걸러내서 받을지[느슨하게], 에러를 발생할 것인지는 선택[엄격하게]
+    }
+
+
+    @Test
+    public void createEvent_Bad_Request_Empty_Input() throws Exception {
+        EventDto eventDto = EventDto.builder().build();
+
+        this.mockMvc.perform(post("/api/events/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(this.objectMapper.writeValueAsString(eventDto)))
+                .andDo(print())
+                .andExpect(status().isBadRequest());
     }
 
 }

@@ -5,10 +5,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import javax.validation.Valid;
 import java.net.URI;
 
 import static org.springframework.hateoas.server.mvc.ControllerLinkBuilder.linkTo;
@@ -32,11 +34,15 @@ public class EventController {
     //Location 헤더에 있는 URI를 통해 이벤트를 조회할 수 있다.
     //linkTo() 메소드는 컨트롤러나, 핸들러 메소드로부터 URI 정보 읽어올 때 쓰는 메소드이다.
     // /api/events/{id}를 uri로 변환하여서 linkTo를 통해 값을 읽어온 후 URI 타입의 변수에 저장한다.
+
     @PostMapping
-    public ResponseEntity createEvent(@RequestBody EventDto eventDto) { //ResponseEntity used in Spring MVC, return value from a @Controller method:
+    public ResponseEntity createEvent(@RequestBody @Valid EventDto eventDto, Errors errors) { //ResponseEntity used in Spring MVC, return value from a @Controller method:
         //Dto를 사용할 경우 Repository를 사용하기 위해선 엔티티(Event)로 바꾸어야하는데 이때 사용할 수 있는 것이 DTO -> 도메인 객체로 값을 복사하는 ModelMapper이다.
         //이 방법을 사용하지 않는다면 도메인 객체를 직접 빌더하여서 evtentDto의 값을 하나씩 넣어줘야한다.
         //ModelMapper를 사용할 경우 리플렉션으로 인한 시간 지연이 발생한다. 이점을 고려해서 사용하자.
+        if (errors.hasErrors()) {
+            return ResponseEntity.badRequest().build();
+        }
 
         Event event = modelMapper.map(eventDto, Event.class);
         Event newEvent = this.eventRepository.save(event);
