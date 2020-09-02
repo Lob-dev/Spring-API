@@ -1,6 +1,7 @@
 package com.lob.demoinflearnrestapi.events;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lob.demoinflearnrestapi.common.TestDesciption;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -66,7 +67,13 @@ public class EventControllerTests {
     // 계산되어야하는 값, 시스템을 통해 지정해야 되는 값은 입력값을 제한해야 한다.
     // 여기에서는 Id(DB 생성), free(basePrice, maxPrice가 없어야함), offline 로직을 통한 판단이 필요한 것들
     // 입력값을 무시하는 방법 Dto 를 이용하여 구현함
+
+    /**
+     * 정상적으로 이벤트를 생성하는 테스트  주석이나 어노테이션 중 골라서 사용
+     * @throws Exception
+     */
     @Test
+    @TestDesciption("정상적으로 이벤트를 생성하는 테스트")
     public void createEvent() throws Exception {
         EventDto event = EventDto.builder() // Event 엔티티 제작 client 의 Form 을 통한 Post 요청과 동일
                 .name("Spring")
@@ -100,8 +107,14 @@ public class EventControllerTests {
                 //어노테이션이 너무 많으면 복잡하게 엮일 수 있기때문에 분산하기로 하였다. DTO의 문제점은 필드의 중복이 발생한다는 것이다.
     }
 
-    // 입력받으면 안되는 값이 들어올 경우 에러를 던지는 방법 (DTO 범위 등)
+
+    /**
+     * 입력받을 수 없는 값을 사용한 경우에 에러가 발생하는 테스트"   주석이나 어노테이션 중 골라서 사용
+     * 입력받으면 안되는 값이 들어올 경우 에러를 던지는 방법 (DTO 범위 등)
+     * @throws Exception
+     */
     @Test
+    @TestDesciption("입력받을 수 없는 값을 사용한 경우에 에러가 발생하는 테스트")
     public void createEvent_Bad_Request() throws Exception {
         Event event = Event.builder()
                 .id(100)// 무시될 값
@@ -132,7 +145,12 @@ public class EventControllerTests {
     }
 
 
+    /**
+     * 입력값이 비어있는 경우에 에러가 발생하는 테스트   주석이나 어노테이션 중 골라서 사용
+     * @throws Exception
+     */
     @Test
+    @TestDesciption("입력값이 비어있는 경우에 에러가 발생하는 테스트")
     public void createEvent_Bad_Request_Empty_Input() throws Exception {
         EventDto eventDto = EventDto.builder().build();
 
@@ -143,8 +161,13 @@ public class EventControllerTests {
                 .andExpect(status().isBadRequest());
     }
 
-    // 잘못된 값이 들어올 경우
+
+    /**
+     * 입력값이 잘못된 경우에 에러가 발생하는 테스트    주석이나 어노테이션 중 골라서 사용
+     * @throws Exception
+     */
     @Test
+    @TestDesciption("입력값이 잘못된 경우에 에러가 발생하는 테스트")
     public void createEvent_Bad_Request_Wrong_Input() throws Exception {
         EventDto eventDto = EventDto.builder()
                 .name("Spring")
@@ -159,11 +182,16 @@ public class EventControllerTests {
                 .location("강남역 D2 스타텁 팩토리") // 장소
                 .build();
 
+
         this.mockMvc.perform(post("/api/events/")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(this.objectMapper.writeValueAsString(eventDto)))
                 .andDo(print())
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$[0].objectName").exists()) // 에러 배열가 담고 있는 인스턴스 명
+                .andExpect(jsonPath("$[0].defaultMessage").exists()) // 기본 응답 메세지
+                .andExpect(jsonPath("$[0].code").exists()) // 에러 코드는?
+        ;
     }
 
 }

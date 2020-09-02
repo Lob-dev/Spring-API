@@ -44,12 +44,13 @@ public class EventController {
         //ModelMapper를 사용할 경우 리플렉션으로 인한 시간 지연이 발생한다. 이점을 고려해서 사용하자.
         // @Valid를 이용한 값 검증 후 에러 검출
         if (errors.hasErrors()) {
-            return ResponseEntity.badRequest().build();
+            //해당 코드는 에러가 뜬다 errors는 json으로 변환되지 않는다. 자바 Bean 스펙이 준수된 객체를 Json으로 변환해주는데 (BeanSerializer) errors는 스펙을 준수하지 않는다.
+            return ResponseEntity.badRequest().body(errors);
         }
         // validator를 이용한 논리 값 검증
         eventValidator.validate(eventDto, errors);
         if (errors.hasErrors()) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(errors);
         }
 
         Event event = modelMapper.map(eventDto, Event.class);
