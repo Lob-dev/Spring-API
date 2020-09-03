@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 public class Event {                          // id의 값만 가지고 equals와 hashcode를 비교함 연관 관계에 해당하는 녀석은 넣으면 안된다
 
     @Id @GeneratedValue
-    private Integer id; // id 값을 통하여 DB 조회를 수행한다.
+    private Integer id; // 임의로 엔티티에 setter를 통해 id를 저장 id를 반환하는 것은 DB에 정상적으로 저장했다는 것을 알리기도 하지만 사용자가 해당 id를 이용해 값을 조회할 때 쓰기도 함
     private String name; // 명
     private String description; // 설명
     private LocalDateTime beginEnrollmentDateTime; // 시작 일시
@@ -29,4 +29,17 @@ public class Event {                          // id의 값만 가지고 equals�
     private EventStatus eventStatus = EventStatus.DRAFT;
 
 
+    public void update() {
+        if (this.basePrice == 0 && this.maxPrice == 0) {
+            this.free = true;
+        } else {
+            this.free = false;
+        }
+
+        if (this.location == null || this.location.isBlank()) {
+            this.offline = false;
+        } else {
+            this.offline = true;
+        }
+    }
 }

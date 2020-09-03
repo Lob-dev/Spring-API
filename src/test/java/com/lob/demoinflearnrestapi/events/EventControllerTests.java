@@ -44,8 +44,8 @@ public class EventControllerTests {
 
     // Repository를 사용해야한다면 Mocking을 통해서 만들어 사용해야한다. 이 객체는 Mock 객체이기 때문에 어떠한 메서드를 이용해도 Null이 반환된다.
     // @MockBean EventRepository eventRepository; NullPointerException이 발생할 것이다. 이를 해결하기 위해선 어떻게 동작하라고 지정을 해야한다.
-
 /*
+
     @Before // 테스트 실행전 이 어노테이션이 선언된 부분을 실행한다.
     public void setup() { // Filters는 서블렛 요청와 응답사이에 존재하여 필터의 설정을 통하여 요청들을 뽑아내고 조작할 수 있다.
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext) // 스프링 MVC의 설정을 적용한 DI 컨테이너를 만들어 이 DI 컨테이너를 사용해 스프링 MVC 동작 재현
@@ -97,10 +97,12 @@ public class EventControllerTests {
                 .andExpect(jsonPath("id").exists()) // id 라는 응답 값이 있는지 확인
                 .andExpect(header().exists(HttpHeaders.LOCATION)) // Location 응답 헤더 확인
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_VALUE)) // Content-Type 응답 헤더 확인
-                .andExpect(jsonPath("id").value(Matchers.not(100)))
-                .andExpect(jsonPath("free").value(Matchers.not(true)))
-                .andExpect(jsonPath("eventStatus").value(Matchers.not("PUBLISHED")))
-                .andExpect(jsonPath("eventStatus").value("DRAFT"));
+                .andExpect(jsonPath("free").value(false))
+                .andExpect(jsonPath("offline").value(true))
+                .andExpect(jsonPath("eventStatus").value("DRAFT"))
+                .andExpect(jsonPath("_links.self").exists())
+                .andExpect(jsonPath("_links.query-events").exists())
+                .andExpect(jsonPath("_links.update-events").exists());
                 //andDo(print())를 통해 나온 모든 값들은 andExpect로 검증할 수 있다.
                 //직접 문자열로 타입을 넣는 것보다 HttpHeaders, MediaTypes 등을 이용해 상수를 이용해서 좀 더 완벽한 검증을 할 수 있다.
                 //Dto를 사용하여 이 문제를 해결해보자. Jackson to json 제공하는 어노테이션 @JsonIgnore 등도 사용할 수 있으나.

@@ -3,6 +3,7 @@ package com.lob.demoinflearnrestapi.events;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.hateoas.server.mvc.ControllerLinkBuilder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.Errors;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.validation.Valid;
 import java.net.URI;
+import java.time.LocalDateTime;
 
 import static org.springframework.hateoas.server.mvc.ControllerLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.ControllerLinkBuilder.methodOn;
@@ -52,13 +54,34 @@ public class EventController {
         if (errors.hasErrors()) {
             return ResponseEntity.badRequest().body(errors);
         }
+        /*
+        EventDto event = EventDto.builder()
+                .name("Spring")
+                .description("REST API Development with Spring")
+                .beginEnrollmentDateTime(LocalDateTime.of(2018,11,23,14,21)) // 모집일
+                .closeEnrollmentDateTime(LocalDateTime.of(2018,11,24,14,21)) // 모집 종료일
+                .beginEventDateTime(LocalDateTime.of(2018,11,25,14,21)) // 시작일
+                .endEventDateTime(LocalDateTime.of(2018,11,26,14,21)) // 종료일
+                .basePrice(100)
+                .maxPrice(200)
+                .limitOfEnrollment(100) // 최대 인원
+                .location("강남역 D2 스타텁 팩토리") // 장소
+                .build();
+        */
+        Event event = modelMapper.map(eventDto, Event.class);   // 위와 같이 직접 맵핑을 해도 된다.
+        event.update();                                         // 서비스로 위임 대상
+        Event newEvent = this.eventRepository.save(event);      // 서비스로 위임 대상
 
-        Event event = modelMapper.map(eventDto, Event.class);
-        Event newEvent = this.eventRepository.save(event);
-        URI createdUri = linkTo(EventController.class).slash(newEvent.getId()).toUri();
-        return ResponseEntity.created(createdUri).body(event);
+        //link 추가 부분
+        ControllerLinkBuilder selfLinkBuilder = linkTo(EventController.class).slash(newEvent.getId());
+        URI createdUri = selfLinkBuilder.toUri();
+        EventResource eventResource = new EventResource(event);
+        eventResource.add(linkTo(EventController.class).withRel("query-events"));  // 코드를 더 리팩토링 하겠다면. 링크를 생성하는 모든 메서드를
+        eventResource.add(selfLinkBuilder.withRel("update-events"));               // EventResource 안에서 처리하는 방법이 있다.
 
-        // event.setId(10) 임의로 엔티티에 setter를 통해 id를 저장 id를 반환하는 것은 DB에 정상적으로 저장했다는 것을 알리기도 하지만 해당 id를 이용해 값을 조회할 때 쓰기도 함
+        return ResponseEntity.created(createdUri).body(eventResource);
+
+
     }
 }
 
