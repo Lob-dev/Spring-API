@@ -1,31 +1,31 @@
 package com.lob.demoinflearnrestapi.events;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lob.demoinflearnrestapi.common.RestDocsConfiguration;
 import com.lob.demoinflearnrestapi.common.TestDesciption;
-import org.hamcrest.Matchers;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
-import org.springframework.beans.ExtendedBeanInfoFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import org.springframework.web.filter.CharacterEncodingFilter;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 
 
+import static org.springframework.restdocs.headers.HeaderDocumentation.*;
+import static org.springframework.restdocs.hypermedia.HypermediaDocumentation.*;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -34,6 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 //@WebMvcTest 슬라이스 Test  WEB용 Bean들만 등록하여 주기 때문에 @Repository, extend JpaRepository 로 등록된 Bean은 적용되지 않는다.
 @SpringBootTest // 통합 테스트를 이용하면 모든 빈들이 등록되므로 모킹을 하는 것을 많이 줄일 수 있다.
 @AutoConfigureMockMvc //SpringBootTest를 사용했을 때 MockMvc를 주입받기 위해선 해당 어노테이션을 같이 사용하여야한다. 자동적으로 서블릿을 생성해준다.
+@AutoConfigureRestDocs // formating을 하려면 restdoc를 커스텀해야한다. RestDocsMockMvcConfigurationCustomizer를 구현한 Bean을 컨테이너에 등록하고 적용한다.
+@Import(RestDocsConfiguration.class)
 public class EventControllerTests {
 
     @Autowired
@@ -88,6 +90,11 @@ public class EventControllerTests {
                 .location("강남역 D2 스타텁 팩토리") // 장소
                 .build();
 
+                //andDo(print())를 통해 나온 모든 값들은 andExpect로 검증할 수 있다.
+                //직접 문자열로 타입을 넣는 것보다 HttpHeaders, MediaTypes 등을 이용해 상수를 이용해서 좀 더 완벽한 검증을 할 수 있다.
+                //Dto를 사용하여 이 문제를 해결해보자. Jackson to json 제공하는 어노테이션 @JsonIgnore 등도 사용할 수 있으나.
+                //어노테이션이 너무 많으면 복잡하게 엮일 수 있기때문에 분산하기로 하였다. DTO의 문제점은 필드의 중복이 발생한다는 것이다.
+
         mockMvc.perform(post("/api/events/") // perform = 받은 url 주소로 post 요청을 보냄 post -> /api/events/
                     .contentType(MediaType.APPLICATION_JSON) // 이 요청의 본문에 JSON 타입을 보낸다.
                     .accept(MediaTypes.HAL_JSON) // 받고 싶은 응답은 HAL_JSON을 원한다. (Hypertext Application Language)
@@ -102,11 +109,59 @@ public class EventControllerTests {
                 .andExpect(jsonPath("eventStatus").value("DRAFT"))
                 .andExpect(jsonPath("_links.self").exists())
                 .andExpect(jsonPath("_links.query-events").exists())
-                .andExpect(jsonPath("_links.update-events").exists());
-                //andDo(print())를 통해 나온 모든 값들은 andExpect로 검증할 수 있다.
-                //직접 문자열로 타입을 넣는 것보다 HttpHeaders, MediaTypes 등을 이용해 상수를 이용해서 좀 더 완벽한 검증을 할 수 있다.
-                //Dto를 사용하여 이 문제를 해결해보자. Jackson to json 제공하는 어노테이션 @JsonIgnore 등도 사용할 수 있으나.
-                //어노테이션이 너무 많으면 복잡하게 엮일 수 있기때문에 분산하기로 하였다. DTO의 문제점은 필드의 중복이 발생한다는 것이다.
+                .andExpect(jsonPath("_links.update-events").exists())
+
+                .andDo(document("create-event", // 문서 명
+                        links(
+                                linkWithRel("self").description("link to self"),
+                                linkWithRel("query-events").description("link to query events"),
+                                linkWithRel("update-events").description("link to update an existing events")
+                        ),
+                        requestHeaders(
+                                //
+                                headerWithName(HttpHeaders.ACCEPT).description("accpet header"),
+                                headerWithName(HttpHeaders.CONTENT_TYPE).description("Content Type")
+                        ),
+                        requestFields(
+                                fieldWithPath("name").type(JsonFieldType.STRING).description("name of new event"),
+                                fieldWithPath("description").type(JsonFieldType.STRING).description("description of new event"),
+                                fieldWithPath("beginEnrollmentDateTime").type(JsonFieldType.STRING).description("date time of begin of new event"),
+                                fieldWithPath("closeEnrollmentDateTime").type(JsonFieldType.STRING).description("date time of close of new event"),
+                                fieldWithPath("beginEventDateTime").type(JsonFieldType.STRING).description("date time of begin of new event"),
+                                fieldWithPath("endEventDateTime").type(JsonFieldType.STRING).description("date time of end of new event"),
+                                fieldWithPath("location").type(JsonFieldType.STRING).description("location of new event"),
+                                fieldWithPath("basePrice").type(JsonFieldType.NUMBER).description("basePrice of new event"),
+                                fieldWithPath("maxPrice").type(JsonFieldType.NUMBER).description("maxPrice of new event"),
+                                fieldWithPath("limitOfEnrollment").type(JsonFieldType.NUMBER).description("limitOfEnrollment of new event")
+                        ),
+                        responseHeaders(
+                                headerWithName(HttpHeaders.LOCATION).description("Location header"),
+                                headerWithName(HttpHeaders.CONTENT_TYPE).description("Content Type")
+                        ), // 이놈이 문제..
+                        responseFields(
+                                // .type(JsonFieldType.NUMBER, STRING...) 해당 Json Path의 Data Type 검증
+                                fieldWithPath("_links.self.href").type(JsonFieldType.STRING).description("link to self"),
+                                fieldWithPath("_links.query-events.href").type(JsonFieldType.STRING).description("link to query"),
+                                fieldWithPath("_links.update-events.href").type(JsonFieldType.STRING).description("link to update"),
+                                fieldWithPath("eventStatus").type(JsonFieldType.STRING).description("it tells is this eventStatus"),
+                                fieldWithPath("id").type(JsonFieldType.NUMBER).description("identifier of new event"),
+                                fieldWithPath("name").type(JsonFieldType.STRING).description("name of new event"),
+                                fieldWithPath("description").type(JsonFieldType.STRING).description("description of new event"),
+                                fieldWithPath("beginEnrollmentDateTime").type(JsonFieldType.STRING).description("date time of begin of new event"),
+                                fieldWithPath("closeEnrollmentDateTime").type(JsonFieldType.STRING).description("date time of close of new event"),
+                                fieldWithPath("beginEventDateTime").type(JsonFieldType.STRING).description("date time of begin of new event"),
+                                fieldWithPath("endEventDateTime").type(JsonFieldType.STRING).description("date time of end of new event"),
+                                fieldWithPath("location").type(JsonFieldType.STRING).description("location of new event"),
+                                fieldWithPath("basePrice").type(JsonFieldType.NUMBER).description("basePrice of new event"),
+                                fieldWithPath("maxPrice").type(JsonFieldType.NUMBER).description("maxPrice of new event"),
+                                fieldWithPath("limitOfEnrollment").type(JsonFieldType.NUMBER).description("limitOfEnrollment of new event"),
+                                fieldWithPath("free").type(JsonFieldType.BOOLEAN).description("it tells is this event is free or not"),
+                                fieldWithPath("offline").type(JsonFieldType.BOOLEAN).description("it tells is this event is offline meeting or not")
+                        )
+                        ));
+
+
+
     }
 
 
